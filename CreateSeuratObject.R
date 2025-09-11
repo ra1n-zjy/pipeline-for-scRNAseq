@@ -50,8 +50,9 @@ df <- data.frame(Sample = names(table(PCSC_preQC$orig.ident)),
                  preQC_Count = as.numeric(table(PCSC_preQC$orig.ident)))
 
 library(openxlsx)
-write.xlsx(df, "./1.data_processing/cell_counts.xlsx")
-getSheetNames("./1.data_processing/cell_counts.xlsx")
-df <- read.xlsx("./1.data_processing/cell_counts.xlsx", sheet = "Sheet 1")
+write.xlsx(df, "./1.data_processing/cell_counts_preQC.xlsx")
+getSheetNames("./1.data_processing/cell_counts_preQC.xlsx")
+df <- read.xlsx("./1.data_processing/cell_counts_preQC.xlsx", sheet = "Sheet 1")
 
 saveRDS(PCSC_preQC, file = "./1.data_processing/PCSC_preQC.Rds")
+
