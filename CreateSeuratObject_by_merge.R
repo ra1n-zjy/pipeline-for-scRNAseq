@@ -31,4 +31,5 @@ getSheetNames("./1.data_processing/cell_counts_preQC.xlsx")
 df <- read.xlsx("./1.data_processing/cell_counts_preQC.xlsx", sheet = "Sheet 1")
 
 
-saveRDS(PCSC,"./1.data_processing/PCSC_preQC.Rds")
+saveRDS(PCSC_preQC,"./1.data_processing/PCSC_preQC.Rds")
+
