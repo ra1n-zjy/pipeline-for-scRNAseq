@@ -154,10 +154,6 @@ grid.arrange(plot1,plot2,nrow=1,ncol=2)
 dev.off()
 rm(plot1,plot2)
 
-pdf("./1.data_processing/QC/FeatureScatter_legend.pdf")
-plot1 <- FeatureScatter(PCSC_preQC, feature1 = "nCount_RNA", feature2 = "percent.mt", shuffle = T, pt.size = 0.5);plot1 
-dev.off()
-
 # filter cells and genes -----------------------------------------------
 
 before <- length(rownames(PCSC_preQC@meta.data))
@@ -256,6 +252,7 @@ dev.off()
 
 saveRDS(PCSC_afterQC, "./1.data_processing/QC/PCSC_afterQC.Rds")
 PCSC_afterQC <- readRDS("./1.data_processing/QC/PCSC_afterQC.Rds")
+
 
 
 
