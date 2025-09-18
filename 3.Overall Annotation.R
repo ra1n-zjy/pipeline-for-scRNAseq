@@ -57,7 +57,7 @@ plot_list <- lapply(res_columns, function(col) {
     ggtitle(paste("Resolution:", gsub("RNA_snn_res\\.", "", col)))  # 添加分辨率标题
 })
 combined_plot <- wrap_plots(plot_list, ncol = 5) 
-ggsave(plot = combined_plot, "./1.data_processing/Annotation/Nomix_DimPlot_cluster_res.pdf", width = 15, height = 7 )
+ggsave(plot = combined_plot, "./1.data_processing/Annotation/NoInteg_DimPlot_cluster_res.pdf", width = 15, height = 7 )
 
 
 
@@ -158,5 +158,6 @@ jjDotPlot(PCSC_NoInteg,
 dev.off()
 
 saveRDS(PCSC_NoInteg, "1.data_processing/Annotation/NoInteg_PCSC_annotated.Rds")
+
 
 
