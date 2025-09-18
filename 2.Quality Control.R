@@ -16,7 +16,7 @@ count_before <- PCSC_preQC@meta.data %>%
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1)) +
   theme(plot.title = element_text(hjust=0.5, face="bold")) +
-  ggtitle("NCells"); Ncell_before
+  ggtitle("NCells"); count_before
 dev.off()
 
 # nCount_RNA ----------------------------------------------------------------
@@ -256,6 +256,7 @@ dev.off()
 
 saveRDS(PCSC_afterQC, "./1.data_processing/QC/PCSC_afterQC.Rds")
 PCSC_afterQC <- readRDS("./1.data_processing/QC/PCSC_afterQC.Rds")
+
 
 
 
