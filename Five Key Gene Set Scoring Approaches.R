@@ -35,7 +35,7 @@ genesets <- lapply(gene_data, function(col) {
 
 cells_rankings <- AUCell_buildRankings(GetAssayData(obj, layer = "data"),
                                        splitByBlocks = TRUE, # 将细胞分组处理，减少内存使用
-                                       plotStats = TRUE, # 显示每个细胞中基因表达的分布统计
+                                       plotStats = TRUE # 显示每个细胞中基因表达的分布统计
 ) 
 cells_rankings
 
@@ -470,5 +470,6 @@ for (i in seq_along(plot_list)) {
   print(plot_list[[i]])
 }
 dev.off()
+
 
 
