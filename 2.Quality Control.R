@@ -7,8 +7,6 @@ if(!dir.exists(folder)){
 
 # cell counts --------------------------------------------------------------------
 
-before_sep <- df
-
 pdf("./1.data_processing/QC/preQC_Count.pdf")
 count_before <- PCSC_preQC@meta.data %>%
   ggplot(aes(x=orig.ident, fill=orig.ident)) +
@@ -252,6 +250,7 @@ dev.off()
 
 saveRDS(PCSC_afterQC, "./1.data_processing/QC/PCSC_afterQC.Rds")
 PCSC_afterQC <- readRDS("./1.data_processing/QC/PCSC_afterQC.Rds")
+
 
 
 
