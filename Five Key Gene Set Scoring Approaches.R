@@ -10,7 +10,7 @@ library(reshape2)
 
 # AUCell ------------------------------------------------------------------
 
-obj <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
+MyData <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
 
 # 批量读取gmt制作list
 all_data <- list()
@@ -33,7 +33,7 @@ genesets <- lapply(gene_data, function(col) {
   col[!is.na(col) & col != ""] 
 })
 
-expMtx <- GetAssayData(obj, assay = "RNA", layer = "data")
+expMtx <- GetAssayData(MyData, assay = "RNA", layer = "data")
 
 cells_rankings <- AUCell_buildRankings(expMtx,
                                        splitByBlocks = TRUE, # 将细胞分组处理，减少内存使用
@@ -44,7 +44,7 @@ cells_rankings
 cells_AUC <- AUCell_calcAUC(genesets, 
                             cells_rankings, 
                             aucMaxRank = nrow(cells_rankings)*0.1 # 只考虑排名在前 aucMaxRank 位的基因
-                            )
+)
 cells_AUC
 
 ## 小提琴图视化 -----
@@ -52,14 +52,14 @@ cells_AUC
 geneSet <- "GOBP_FIBROBLAST_GROWTH_FACTOR_PRODUCTION"
 AUCell_auc <- as.numeric(getAUC(cells_AUC)[geneSet, ])
 AUCell_auc
-obj$AUCell <- AUCell_auc
-head(obj@meta.data)
+MyData$AUCell <- AUCell_auc
+head(MyData@meta.data)
 
-obj_meta <- obj@meta.data %>%
+MyData_meta <- MyData@meta.data %>%
   dplyr::select(celltype, AUCell) %>%
   mutate(celltype = as.factor(celltype))
 
-p <- ggplot(obj_meta, aes(x = celltype, y = AUCell, fill = celltype)) +
+p <- ggplot(MyData_meta, aes(x = celltype, y = AUCell, fill = celltype)) +
   geom_violin(scale = "width", alpha = 0.8) +
   geom_boxplot(width = 0.2, alpha = 0.6, outlier.shape = NA) +
   geom_jitter(alpha = 0.1, color = "black", size = 0.05) +
@@ -72,7 +72,7 @@ p <- ggplot(obj_meta, aes(x = celltype, y = AUCell, fill = celltype)) +
     axis.text.x = element_text(angle = 45, hjust = 1)
   ) +
   stat_compare_means(
-    comparisons = combn(levels(obj_meta$celltype), 2, simplify = FALSE),
+    comparisons = combn(levels(MyData_meta$celltype), 2, simplify = FALSE),
     method = "wilcox.test",
     label = "p.signif",
     tip.length = 0.01,
@@ -116,7 +116,7 @@ nBreaks <- 5
 color_Neg <- grDevices::colorRampPalette(c("#1B3E6C", "#009DFB", "#75AADB"))(nBreaks)  
 color_Pos <- grDevices::colorRampPalette(c("#FFC0CB", "#FF00FF", "#FF0000"))(nBreaks)            
 
-cellsUmap <- obj@reductions$umap@cell.embeddings
+cellsUmap <- MyData@reductions$umap@cell.embeddings
 
 for (geneSetName in names(selectedThresholds)) {     
   passThreshold <- getAUC(cells_AUC)[geneSetName, ] > selectedThresholds[geneSetName]  
@@ -133,7 +133,7 @@ for (geneSetName in names(selectedThresholds)) {
 selectedThresholds[1]
 selectedThresholds[2]
 par(mfrow = c(2,3))    
-AUCell_plotTSNE(tSNE = cellsUmap, exprMat = GetAssayData(obj, layer = "data"),    
+AUCell_plotTSNE(tSNE = cellsUmap, exprMat = expMtx,    
                 cellsAUC = cells_AUC[1:2, ], 
                 thresholds = selectedThresholds)
 
@@ -141,14 +141,14 @@ newThresholds <- selectedThresholds
 newThresholds[1] <- 0.1      
 newThresholds[2] <- 0.25       
 par(mfrow = c(2,3))       
-AUCell_plotTSNE(tSNE = cellsUmap, exprMat = GetAssayData(obj, layer = "data"),       
+AUCell_plotTSNE(tSNE = cellsUmap, exprMat = expMtx,       
                 cellsAUC = cells_AUC[1:2, ], thresholds = newThresholds)
 
 # GSVA ------------------------------------------------------------------
 
 ## 每个细胞打分 -----
 
-obj <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
+MyData <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
 gene_data <- read_excel("2.1.1PCa_by_c/打分/gmt/heparin.xlsx", col_names = TRUE, sheet = "Sheet 1")
 head(gene_data)
 genesets <- lapply(gene_data, function(col) {
@@ -156,7 +156,7 @@ genesets <- lapply(gene_data, function(col) {
 })
 names(genesets)
 
-expMtx <- GetAssayData(obj, assay = "RNA", slot = "data")
+expMtx <- GetAssayData(MyData, assay = "RNA", slot = "data")
 
 detectCores()
 time <- system.time({
@@ -168,9 +168,9 @@ time <- system.time({
 saveRDS(GSVA, "2.1.1PCa_by_c/打分/HEPARIN_GSVA.Rds")
 
 GSVA <- readRDS("2.1.1PCa_by_c/打分/HEPARIN_GSVA.Rds") 
-celltype <- obj$celltype %>% as.data.frame()
+celltype <- MyData$celltype %>% as.data.frame()
 colnames(celltype) <- "celltype"
-table(obj$celltype)
+table(MyData$celltype)
 GSVA <- GSVA %>% as.data.frame() %>% t()
 mtx <- cbind(GSVA, celltype)
 mtx$celltype <- factor(mtx$celltype, levels = c("General", "Naive_Dom", "NCHT_General", "NCHT_nR_Dom", "NCHT_R_Dom"))
@@ -216,15 +216,15 @@ ggplot(data, aes(x = celltype, y = value, fill = celltype)) +
 
 ## pseudobulks -----
 
-obj <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
+MyData <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
 gene_data <- read_excel("2.1.1PCa_by_c/打分/gmt/selected/Apoptosis  selected.xlsx", col_names = TRUE, sheet = "Sheet1")
 head(gene_data)
 genesets <- lapply(gene_data, function(col) {
   col[!is.na(col) & col != ""] 
 })
 
-Idents(obj) <- obj$celltype
-expr <- AverageExpression(obj, assays = "RNA", slot = "data")[[1]]
+Idents(MyData) <- MyData$celltype
+expr <- AverageExpression(MyData, assays = "RNA", slot = "data")[[1]]
 expr <- expr[rowSums(expr)>0,] 
 expr <- as.matrix(expr)
 head(expr)
@@ -258,8 +258,8 @@ pheatmap(gsva_df,
 
 # ssGSEA ------------------------------------------------------------------
 
-obj <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
-gene.expr <-  GetAssayData(obj, assay = "RNA", slot = "data")
+MyData <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
+expMtx <-  GetAssayData(MyData, assay = "RNA", slot = "data")
 gene_data <- read_excel("2.1.1PCa_by_c/打分/gmt/heparin.xlsx", col_names = TRUE, sheet = "Sheet 1")
 head(gene_data)
 genesets <- lapply(gene_data, function(col) {
@@ -267,7 +267,7 @@ genesets <- lapply(gene_data, function(col) {
 })
 names(genesets)
 
-ssGSEA <- GSVA::gsva(gene.expr, 
+ssGSEA <- GSVA::gsva(expMtx, 
                      genesets,
                      method='ssgsea',
                      kcdf='Gaussian',
@@ -276,9 +276,9 @@ ssGSEA <- GSVA::gsva(gene.expr,
 saveRDS(ssGSEA, "2.1.1PCa_by_c/打分/HEPARIN_ssGSEA.Rds")
 
 
-celltype <- obj$celltype %>% as.data.frame()
+celltype <- MyData$celltype %>% as.data.frame()
 colnames(celltype) <- "celltype"
-table(obj$celltype)
+table(MyData$celltype)
 ssGSEA <- ssGSEA %>% as.data.frame() %>% t()
 mtx <- cbind(ssGSEA, celltype)
 mtx$celltype <- factor(mtx$celltype, levels = c("General", "Naive_Dom", "NCHT_General", "NCHT_nR_Dom", "NCHT_R_Dom"))
@@ -325,22 +325,22 @@ ggplot(data, aes(x = celltype, y = value, fill = celltype)) +
 
 # AddModuleScore ----------------------------------------------------------
 
-obj <- readRDS("3.3.Tcell/CD8/CD8_annotated.Rds")
+MyData <- readRDS("3.3.Tcell/CD8/CD8_annotated.Rds")
 gene_data <- read_excel("3.3.Tcell/gs.xlsx", col_names = TRUE, sheet = "CD8T")
 gene_list <- lapply(gene_data, function(col) {
   col[!is.na(col) & col != ""] 
 })
 
-obj <- AddModuleScore(obj,
+MyData <- AddModuleScore(MyData,
                       features = gene_list,
                       ctrl = 5,
                       name = "FunctionScore")
 for(i in 1:length(gene_list)) {
-  colnames(obj@meta.data)[colnames(obj@meta.data) == paste0("FunctionScore", i)] <- names(gene_list)[i]
+  colnames(MyData@meta.data)[colnames(MyData@meta.data) == paste0("FunctionScore", i)] <- names(gene_list)[i]
 }
 
 ## 热图 -----
-Idents(obj) <- obj$celltype_minor
+Idents(MyData) <- MyData$celltype_minor
 Differentiation <- c("Naive", "Activation:Effector function", "Exhaustion")
 Function <- c("TCR Signaling", "Cytotoxicity", "Cytokine:Cytokine receptor",
               "Chemokine:Chemokine receptor", "Senescence", "Anergy",
@@ -350,14 +350,14 @@ Metabolism <- c("Oxidative phosphorylation", "Glycolysis", "Fatty acid metabolis
 Apoptosis <- c("Pro-apoptosis", "Anti-apoptosis")
 MarkerNameVector <- c(Differentiation, Function, Metabolism, Apoptosis)
 FunctionScoreMatrix <- matrix(0,
-                              ncol = length(unique(obj$celltype_minor)),
+                              ncol = length(unique(MyData$celltype_minor)),
                               nrow = length(MarkerNameVector))
-colnames(FunctionScoreMatrix) <- paste0(unique(obj$celltype_minor))
+colnames(FunctionScoreMatrix) <- paste0(unique(MyData$celltype_minor))
 rownames(FunctionScoreMatrix) <- MarkerNameVector
 for(ci in 1:ncol(FunctionScoreMatrix)) {
   for(ri in 1:nrow(FunctionScoreMatrix)) {
-    FunctionVec <- as_tibble(obj@meta.data) %>% pull(MarkerNameVector[ri])
-    fv <- mean(FunctionVec[obj$celltype_minor == unique(obj$celltype_minor)[ci]])
+    FunctionVec <- as_tibble(MyData@meta.data) %>% pull(MarkerNameVector[ri])
+    fv <- mean(FunctionVec[MyData$celltype_minor == unique(MyData$celltype_minor)[ci]])
     FunctionScoreMatrix[ri, ci] <- fv
   }
 }
@@ -372,7 +372,7 @@ signatureType_row <- data.frame(Signature.type = c(
   rep("Metabolism", length(Metabolism)),
   rep("Apoptosis", length(Apoptosis))))
 rownames(signatureType_row) <- MarkerNameVector
-col_name_v <- paste0(sort(unique(obj$celltype_minor)))
+col_name_v <- paste0(sort(unique(MyData$celltype_minor)))
 FunctionScoreMatrix <- FunctionScoreMatrix[, col_name_v]
 
 pheatmap(FunctionScoreMatrix,
@@ -394,7 +394,7 @@ pheatmap(FunctionScoreMatrix,
 
 X <- "REACTOME_PI3K_AKT_ACTIVATION"
 module_score_df <- FetchData(
-  obj,
+  MyData,
   vars = c(paste0(X), "celltype")
 )
 
@@ -423,7 +423,7 @@ p <- ggplot(module_score_df, aes(x = celltype, y = !!sym(X), fill = celltype)) +
 
 # PercentageFeatureSet ----------------------------------------------------
 
-obj <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
+MyData <- readRDS("/home/data/zhuang/CT/3.1.PCa/PCa_merged_with_Ctrl_annotated.Rds") 
 gene_data <- read_excel("2.1.1PCa_by_c/打分/gmt/selected/Apoptosis  selected.xlsx", col_names = TRUE, sheet = "Sheet1")
 
 gene_columns <- names(gene_data)
@@ -434,13 +434,13 @@ for (col_name in gene_columns) {
     as.character() %>%
     .[!is.na(.)] %>%
     .[. != ""]
-  matching_genes <- intersect(current_genes, rownames(obj))
+  matching_genes <- intersect(current_genes, rownames(MyData))
   if (length(matching_genes) == 0) {
     message("No matching genes found for ", col_name)
     next
   }
-  obj <- PercentageFeatureSet(obj, features = matching_genes, col.name = col_name)
-  module_score_df <- FetchData(obj, vars = c(col_name, "celltype"))
+  MyData <- PercentageFeatureSet(MyData, features = matching_genes, col.name = col_name)
+  module_score_df <- FetchData(MyData, vars = c(col_name, "celltype"))
   module_score_df$celltype <- factor(module_score_df$celltype, levels = celltype_levels)
   p <- ggplot(module_score_df, aes(x = celltype, y = !!sym(col_name), fill = celltype)) +
     geom_violin(scale = "width", alpha = 0.8) +
@@ -472,6 +472,7 @@ for (i in seq_along(plot_list)) {
   print(plot_list[[i]])
 }
 dev.off()
+
 
 
 
