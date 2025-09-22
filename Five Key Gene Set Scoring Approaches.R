@@ -327,16 +327,16 @@ ggplot(data, aes(x = celltype, y = value, fill = celltype)) +
 
 MyData <- readRDS("3.3.Tcell/CD8/CD8_annotated.Rds")
 gene_data <- read_excel("3.3.Tcell/gs.xlsx", col_names = TRUE, sheet = "CD8T")
-gene_list <- lapply(gene_data, function(col) {
+genesets <- lapply(gene_data, function(col) {
   col[!is.na(col) & col != ""] 
 })
 
 MyData <- AddModuleScore(MyData,
-                      features = gene_list,
+                      features = genesets,
                       ctrl = 5,
                       name = "FunctionScore")
-for(i in 1:length(gene_list)) {
-  colnames(MyData@meta.data)[colnames(MyData@meta.data) == paste0("FunctionScore", i)] <- names(gene_list)[i]
+for(i in 1:length(genesets)) {
+  colnames(MyData@meta.data)[colnames(MyData@meta.data) == paste0("FunctionScore", i)] <- names(genesets)[i]
 }
 
 ## 热图 -----
@@ -472,6 +472,7 @@ for (i in seq_along(plot_list)) {
   print(plot_list[[i]])
 }
 dev.off()
+
 
 
 
