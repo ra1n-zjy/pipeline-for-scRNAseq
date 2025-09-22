@@ -267,14 +267,11 @@ genesets <- lapply(gene_data, function(col) {
 })
 names(genesets)
 
-ssGSEA <- GSVA::gsva(expMtx, 
-                     genesets,
-                     method='ssgsea',
-                     kcdf='Gaussian',
-                     verbose = TRUE, 
-                     parallel.sz = 20)
+gsvaPar <- ssgseaParam(exprData = expMtx, 
+                       geneSets = genesets,
+                       normalize = TRUE)
+ssGSEA <- gsva(gsvaPar, verbose = TRUE)
 saveRDS(ssGSEA, "2.1.1PCa_by_c/打分/HEPARIN_ssGSEA.Rds")
-
 
 celltype <- MyData$celltype %>% as.data.frame()
 colnames(celltype) <- "celltype"
@@ -472,6 +469,7 @@ for (i in seq_along(plot_list)) {
   print(plot_list[[i]])
 }
 dev.off()
+
 
 
 
