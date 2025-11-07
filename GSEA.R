@@ -36,7 +36,7 @@ head(markers)
 markers_id <- bitr(markers$SYMBOL,
                    fromType = "SYMBOL",
                    toType = "ENTREZID",
-                   OrgDb = "org.Mm.eg.db")
+                   OrgDb = "org.Hs.eg.db") # Mm
 markers_all <- merge(markers, markers_id, by = "SYMBOL", all = FALSE)
 markers_all_sort <- markers_all[order(markers_all$log2FC, decreasing = TRUE), ]
 genelist <- markers_all_sort$log2FC
@@ -45,7 +45,7 @@ names(genelist) <- markers_all_sort$ENTREZID
 ### GOBP ---------------------------------------------------
 
 go <- gseGO(genelist,
-            OrgDb = 'org.Hs.eg.db', #Mm
+            OrgDb = 'org.Hs.eg.db', # Mm
             ont = 'BP',
             pvalueCutoff = 1,
             minGSSize = 10,
