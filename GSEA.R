@@ -14,6 +14,8 @@ markers <- FindMarkers(MyData,
                        ident.1 = "AAAA",
                        ident.2 = "BBBB",
                        logfc.threshold = 0,
+                       min.pct = 0, 
+                       min.diff.pct = -Inf,
                        only.pos = FALSE)
 markers <- rownames_to_column(markers, var = "SYMBOL")
 
@@ -285,6 +287,8 @@ for (X in celltypes) {
                          ident.1 = X,
                          ident.2 = NULL,
                          logfc.threshold = 0,
+                         min.pct = 0, 
+                         min.diff.pct = -Inf,
                          only.pos = FALSE)
   markers <- rownames_to_column(markers, var = "SYMBOL")
   colnames(markers)[c(1,3)] <- c("SYMBOL", "log2FC")
@@ -549,6 +553,7 @@ markers <- FindMarkers(
   ident.1 = "AAAA",
   ident.2 = "BBBB",
   only.pos = FALSE,  
+  min.diff.pct = -Inf,
   min.pct = 0, 
   logfc.threshold = 0)
 
