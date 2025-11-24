@@ -125,7 +125,7 @@ write.xlsx(data,
 
 ### REACTOME ---------------------------------------------------
 
-reactome_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:REACTOME") %>% 
+reactome_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:REACTOME") %>% # Mus musculus 
   dplyr::select(gs_name, gene_symbol)
 
 reactome <- GSEA(
@@ -146,7 +146,7 @@ write.xlsx(data,
 
 ### PID ---------------------------------------------------
 
-pid_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:PID") %>% 
+pid_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:PID") %>% # Mus musculus 
   dplyr::select(gs_name, gene_symbol)
 
 set.seed(123)
@@ -168,7 +168,7 @@ write.xlsx(data,
 
 ### BIOCARTA ---------------------------------------------------
 
-biocarta_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:BIOCARTA") %>% 
+biocarta_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:BIOCARTA") %>% # Mus musculus 
   dplyr::select(gs_name, gene_symbol)
 
 biocarta <- GSEA(
@@ -185,6 +185,27 @@ biocarta <- GSEA(
 data <- biocarta@result
 write.xlsx(data, 
            file = "GSEA/Group/BIOCARTA.xlsx",
+           row.names = FALSE)
+
+### BIOCARTA ---------------------------------------------------
+
+wp_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:WIKIPATHWAYS") %>% # Mus musculus   
+  dplyr::select(gs_name, gene_symbol) 
+
+wp <- GSEA(
+  geneList = genelist,
+  TERM2GENE = wp_gene_sets,
+  exponent = 1,
+  minGSSize = 10,
+  maxGSSize = 1000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "BH",
+  eps = 1e-100,
+  seed = 123
+)
+data <- wp@result
+write.xlsx(data, 
+           file = "GSEA/Group/WP.xlsx",
            row.names = FALSE)
 
 ### visualization, taking GOBP as an example ---------------------------------------------------
@@ -696,6 +717,56 @@ for (X in celltypes) {
     )
   ggsave(plot=p, paste0("GSEA/celltype_minor/BIOCARTA/Bar_BIOCARTA_",X,".pdf"),width = 9,height = 8)
   
+  ### WP ---------------------------------------------------
+  wp_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:WIKIPATHWAYS") %>% # Mus musculus   
+    dplyr::select(gs_name, gene_symbol) 
+  
+  wp <- GSEA(
+    geneList = genelist,
+    TERM2GENE = wp_gene_sets,
+    exponent = 1,
+    minGSSize = 10,
+    maxGSSize = 1000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "BH",
+    eps = 1e-100,
+    seed = 123
+  )
+  data <- wp@result
+  write.xlsx(data, 
+             file = paste0("GSEA/celltype_minor/WP/WP-", X, ".xlsx"),
+             row.names = FALSE)
+  cat("已完成", X, "的WP分析\n")  
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
+  combined <- bind_rows(top10, bottom10)
+  p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
+    geom_col(aes(fill = pvalue)) + 
+    coord_flip() +
+    scale_fill_gradientn(
+      colours = c("#F2A49C", "#B9A3C6", "#8DAACB"),  # 蓝-紫-红
+      name = "pvalue",
+      limits = c(0.01, 0.05),
+      breaks = c(0.01, 0.02, 0.03, 0.04, 0.05),
+      labels = c("0.01", "0.02", "0.03", "0.04", "0.05")
+    )+
+    labs(
+      x = "",
+      y = "Normalized Enrichment Score (NES)",
+      title = "WP GSEA"
+    ) +
+    scale_x_discrete(labels = function(dat) str_wrap(dat, width = 600)) + 
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+      axis.title.y = element_text(face = "bold"),
+      axis.text.y = element_text(size = 10, color = "black"),
+      axis.text.x = element_text(size = 9, color = "black"),
+      panel.grid.major.y = element_blank(),
+      legend.position = "bottom",
+      legend.title = element_text(face = "bold")
+    )
+  ggsave(plot=p, paste0("GSEA/celltype_minor/WP/Bar_WP_",X,".pdf"),width = 9,height = 8)
 }
 
 # single signature GSEA ---------------------------------------------------
@@ -750,6 +821,9 @@ gseaNb(object = gsea,
        subPlot = 3)
 
 dev.off()
+
+
+
 
 
 
