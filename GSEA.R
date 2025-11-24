@@ -117,6 +117,7 @@ write.xlsx(data,
 
 ### HALLMARK ---------------------------------------------------
 
+markers_all_sort <- markers[order(markers$log2FC, decreasing = TRUE), ]
 genelist <- markers_all_sort$log2FC
 names(genelist) <- markers_all_sort$SYMBOL 
 hallmark_gene_sets <- msigdbr(species = "Homo sapiens", category = "H") %>% # Mus musculus
@@ -490,6 +491,7 @@ for (X in celltypes) {
   ggsave(plot=p, paste0("GSEA/celltype_minor/DO/Bar_DO_",X,".pdf"),width = 9,height = 8)
   
   # HALLMARK
+  markers_all_sort <- markers[order(markers$log2FC, decreasing = TRUE), ]
   genelist <- markers_all_sort$log2FC
   names(genelist) <- markers_all_sort$SYMBOL 
   hallmark_gene_sets <- msigdbr(species = "Homo sapiens", category = "H") %>%  # Mus musculus
