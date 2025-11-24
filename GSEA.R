@@ -82,22 +82,6 @@ write.xlsx(data,
            file = "GSEA/Group/KEGG.xlsx",
            row.names = FALSE)
 
-### REACTOME ---------------------------------------------------
-
-reactome <- gsePathway(genelist,
-                       organism = "human", # mouse
-                       minGSSize = 10,
-                       maxGSSize = 1000,
-                       pvalueCutoff = 1,
-                       pAdjustMethod = "BH",
-                       verbose = FALSE,
-                       eps = 1e-100)
-reactome <- setReadable(reactome, OrgDb = 'org.Hs.eg.db', keyType = 'ENTREZID')
-data <- reactome@result
-write.xlsx(data, 
-           file = "GSEA/Group/Reactome.xlsx",
-           row.names = FALSE)
-
 ### DO ---------------------------------------------------
 
 do <- gseDO(genelist,
@@ -137,6 +121,70 @@ hallmark <- GSEA(
 data <- hallmark@result
 write.xlsx(data, 
            file = "GSEA/Group/HALLMARK.xlsx",
+           row.names = FALSE)
+
+### REACTOME ---------------------------------------------------
+
+reactome_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:REACTOME") %>% 
+  dplyr::select(gs_name, gene_symbol)
+
+reactome <- GSEA(
+  geneList = genelist,
+  TERM2GENE = reactome_gene_sets,
+  exponent = 1,
+  minGSSize = 10,
+  maxGSSize = 1000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "BH",
+  eps = 1e-100,
+  seed = 123
+)
+data <- reactome@result
+write.xlsx(data, 
+           file = "GSEA/Group/REACTOME.xlsx",
+           row.names = FALSE)
+
+### PID ---------------------------------------------------
+
+pid_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:PID") %>% 
+  dplyr::select(gs_name, gene_symbol)
+
+set.seed(123)
+pid <- GSEA(
+  geneList = genelist,
+  TERM2GENE = pid_gene_sets,
+  exponent = 1,
+  minGSSize = 10,
+  maxGSSize = 1000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "BH",
+  eps = 1e-100,
+  seed = 123
+)
+data <- pid@result
+write.xlsx(data, 
+           file = "GSEA/Group/PID.xlsx",
+           row.names = FALSE)
+
+### BIOCARTA ---------------------------------------------------
+
+biocarta_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:BIOCARTA") %>% 
+  dplyr::select(gs_name, gene_symbol)
+
+biocarta <- GSEA(
+  geneList = genelist,
+  TERM2GENE = biocarta_gene_sets,
+  exponent = 1,
+  minGSSize = 10,
+  maxGSSize = 1000,
+  pvalueCutoff = 1,
+  pAdjustMethod = "BH",
+  eps = 1e-100,
+  seed = 123
+)
+data <- biocarta@result
+write.xlsx(data, 
+           file = "GSEA/Group/BIOCARTA.xlsx",
            row.names = FALSE)
 
 ### visualization, taking GOBP as an example ---------------------------------------------------
@@ -272,7 +320,7 @@ if(!dir.exists(folder)){
   dir.create(folder)
 }
 
-sub_folders <- c("GOBP", "KEGG", "Reactome", "DO", "HALLMARK")
+sub_folders <- c("GOBP", "KEGG", "DO", "HALLMARK", "Reactome", "PID", "BIOCARTA")
 for (sub_folder_name in sub_folders) {
   full_path <- file.path(folder, sub_folder_name)
   if(!dir.exists(full_path)){
@@ -303,7 +351,7 @@ for (X in celltypes) {
   genelist <- markers_all_sort$log2FC
   names(genelist) <- markers_all_sort$ENTREZID
   
-  # GOBP
+  ### GOBP ---------------------------------------------------
   go <- gseGO(genelist,
               OrgDb = 'org.Hs.eg.db', # Mm
               ont = 'BP',
@@ -320,8 +368,8 @@ for (X in celltypes) {
              file = paste0("GSEA/celltype_minor/GOBP/GOBP-", X, ".xlsx"),
              row.names = FALSE)
   cat("已完成", X, "的GOBP分析\n")  
-  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% head(n = 15)
-  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% tail(n = 15)
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
   combined <- bind_rows(top10, bottom10)
   p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
     geom_col(aes(fill = pvalue)) + 
@@ -351,7 +399,7 @@ for (X in celltypes) {
     )
   ggsave(plot=p, paste0("GSEA/celltype_minor/GOBP/Bar_GOBP_",X,".pdf"),width = 9,height = 8)
   
-  # KEGG
+  ### KEGG ---------------------------------------------------
   kegg <- gseKEGG(genelist,
                   organism = "hsa", # mmu
                   nPerm = 1000,
@@ -368,8 +416,8 @@ for (X in celltypes) {
              file = paste0("GSEA/celltype_minor/KEGG/KEGG-", X, ".xlsx"),
              row.names = FALSE)
   cat("已完成", X, "的KEGG分析\n")  
-  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% head(n = 15)
-  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% tail(n = 15)
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
   combined <- bind_rows(top10, bottom10)
   p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
     geom_col(aes(fill = pvalue)) + 
@@ -399,53 +447,7 @@ for (X in celltypes) {
     )
   ggsave(plot=p, paste0("GSEA/celltype_minor/KEGG/Bar_KEGG_",X,".pdf"),width = 9,height = 8)
   
-  # Reactome
-  reactome <- gsePathway(genelist,
-                         organism = "human", # mouse
-                         minGSSize = 10,
-                         maxGSSize = 1000,
-                         pvalueCutoff = 1,
-                         pAdjustMethod = "BH",
-                         verbose = FALSE,
-                         eps = 1e-100)
-  reactome <- setReadable(reactome, OrgDb = 'org.Hs.eg.db', keyType = 'ENTREZID')
-  data <- reactome@result
-  write.xlsx(data, 
-             file = paste0("GSEA/celltype_minor/Reactome/Reactome-", X, ".xlsx"),
-             row.names = FALSE)
-  cat("已完成", X, "的Reactome分析\n")  
-  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% head(n = 15)
-  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% tail(n = 15)
-  combined <- bind_rows(top10, bottom10)
-  p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
-    geom_col(aes(fill = pvalue)) + 
-    coord_flip() +
-    scale_fill_gradientn(
-      colours = c("#F2A49C", "#B9A3C6", "#8DAACB"),  # 蓝-紫-红
-      name = "pvalue",
-      limits = c(0.01, 0.05),
-      breaks = c(0.01, 0.02, 0.03, 0.04, 0.05),
-      labels = c("0.01", "0.02", "0.03", "0.04", "0.05")
-    )+
-    labs(
-      x = "",
-      y = "Normalized Enrichment Score (NES)",
-      title = "Reactome GSEA"
-    ) +
-    scale_x_discrete(labels = function(dat) str_wrap(dat, width = 600)) + 
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
-      axis.title.y = element_text(face = "bold"),
-      axis.text.y = element_text(size = 10, color = "black"),
-      axis.text.x = element_text(size = 9, color = "black"),
-      panel.grid.major.y = element_blank(),
-      legend.position = "bottom",
-      legend.title = element_text(face = "bold")
-    )
-  ggsave(plot=p, paste0("GSEA/celltype_minor/Reactome/Bar_Reactome_",X,".pdf"),width = 9,height = 8)
-  
-  # DO
+  ### DO ---------------------------------------------------
   do <- gseDO(genelist,
               minGSSize = 10,
               maxGSSize = 1000,
@@ -459,8 +461,8 @@ for (X in celltypes) {
              file = paste0("GSEA/celltype_minor/DO/DO-", X, ".xlsx"),
              row.names = FALSE)
   cat("已完成", X, "的DO分析\n")  
-  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% head(n = 15)
-  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% tail(n = 15)
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
   combined <- bind_rows(top10, bottom10)
   p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
     geom_col(aes(fill = pvalue)) + 
@@ -490,13 +492,14 @@ for (X in celltypes) {
     )
   ggsave(plot=p, paste0("GSEA/celltype_minor/DO/Bar_DO_",X,".pdf"),width = 9,height = 8)
   
-  # HALLMARK
+  ### HALLMARK ---------------------------------------------------
   markers_all_sort <- markers[order(markers$log2FC, decreasing = TRUE), ]
   genelist <- markers_all_sort$log2FC
   names(genelist) <- markers_all_sort$SYMBOL 
   hallmark_gene_sets <- msigdbr(species = "Homo sapiens", category = "H") %>%  # Mus musculus
     dplyr::select(gs_name, gene_symbol)
   
+  set.seed(123)
   hallmark <- GSEA(
     geneList = genelist,
     TERM2GENE = hallmark_gene_sets,
@@ -505,16 +508,15 @@ for (X in celltypes) {
     maxGSSize = 1000,
     pvalueCutoff = 1,
     pAdjustMethod = "BH",
-    eps = 1e-100,
-    seed = 123
+    eps = 1e-100
   )
   data <- hallmark@result
   write.xlsx(data, 
              file = paste0("GSEA/celltype_minor/HALLMARK/HALLMARK-", X, ".xlsx"),
              row.names = FALSE)
   cat("已完成", X, "的HALLMARK分析\n")  
-  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% head(n = 15)
-  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05) %>% tail(n = 15)
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
   combined <- bind_rows(top10, bottom10)
   p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
     geom_col(aes(fill = pvalue)) + 
@@ -543,6 +545,157 @@ for (X in celltypes) {
       legend.title = element_text(face = "bold")
     )
   ggsave(plot=p, paste0("GSEA/celltype_minor/HALLMARK/Bar_HALLMARK_",X,".pdf"),width = 9,height = 8)
+  
+  ### Reactome ---------------------------------------------------
+  reactome_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:REACTOME") %>%  # Mus musculus
+    dplyr::select(gs_name, gene_symbol)
+  
+  reactome <- GSEA(
+    geneList = genelist,
+    TERM2GENE = reactome_gene_sets,
+    exponent = 1,
+    minGSSize = 10,
+    maxGSSize = 1000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "BH",
+    eps = 1e-100
+  )
+  data <- reactome@result
+  write.xlsx(data, 
+             file = paste0("GSEA/celltype_minor/Reactome/Reactome-", X, ".xlsx"),
+             row.names = FALSE)
+  cat("已完成", X, "的Reactome分析\n")  
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
+  combined <- bind_rows(top10, bottom10)
+  p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
+    geom_col(aes(fill = pvalue)) + 
+    coord_flip() +
+    scale_fill_gradientn(
+      colours = c("#F2A49C", "#B9A3C6", "#8DAACB"),  # 蓝-紫-红
+      name = "pvalue",
+      limits = c(0.01, 0.05),
+      breaks = c(0.01, 0.02, 0.03, 0.04, 0.05),
+      labels = c("0.01", "0.02", "0.03", "0.04", "0.05")
+    )+
+    labs(
+      x = "",
+      y = "Normalized Enrichment Score (NES)",
+      title = "Reactome GSEA"
+    ) +
+    scale_x_discrete(labels = function(dat) str_wrap(dat, width = 600)) + 
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+      axis.title.y = element_text(face = "bold"),
+      axis.text.y = element_text(size = 10, color = "black"),
+      axis.text.x = element_text(size = 9, color = "black"),
+      panel.grid.major.y = element_blank(),
+      legend.position = "bottom",
+      legend.title = element_text(face = "bold")
+    )
+  ggsave(plot=p, paste0("GSEA/celltype_minor/Reactome/Bar_Reactome_",X,".pdf"),width = 9,height = 8)
+  
+  ### PID ---------------------------------------------------
+  pid_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:PID") %>%  # Mus musculus
+    dplyr::select(gs_name, gene_symbol)
+  
+  pid <- GSEA(
+    geneList = genelist,
+    TERM2GENE = pid_gene_sets,
+    exponent = 1,
+    minGSSize = 10,
+    maxGSSize = 1000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "BH",
+    eps = 1e-100
+  )
+  data <- pid@result
+  write.xlsx(data, 
+             file = paste0("GSEA/celltype_minor/PID/PID-", X, ".xlsx"),
+             row.names = FALSE)
+  cat("已完成", X, "的PID分析\n")  
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
+  combined <- bind_rows(top10, bottom10)
+  p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
+    geom_col(aes(fill = pvalue)) + 
+    coord_flip() +
+    scale_fill_gradientn(
+      colours = c("#F2A49C", "#B9A3C6", "#8DAACB"),  # 蓝-紫-红
+      name = "pvalue",
+      limits = c(0.01, 0.05),
+      breaks = c(0.01, 0.02, 0.03, 0.04, 0.05),
+      labels = c("0.01", "0.02", "0.03", "0.04", "0.05")
+    )+
+    labs(
+      x = "",
+      y = "Normalized Enrichment Score (NES)",
+      title = "PID GSEA"
+    ) +
+    scale_x_discrete(labels = function(dat) str_wrap(dat, width = 600)) + 
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+      axis.title.y = element_text(face = "bold"),
+      axis.text.y = element_text(size = 10, color = "black"),
+      axis.text.x = element_text(size = 9, color = "black"),
+      panel.grid.major.y = element_blank(),
+      legend.position = "bottom",
+      legend.title = element_text(face = "bold")
+    )
+  ggsave(plot=p, paste0("GSEA/celltype_minor/PID/Bar_PID_",X,".pdf"),width = 9,height = 8)
+  
+  ### BIOCARTA ---------------------------------------------------
+  biocarta_gene_sets <- msigdbr(species = "Homo sapiens", category = "C2", subcategory = "CP:PID") %>%  # Mus musculus
+    dplyr::select(gs_name, gene_symbol)
+  
+  biocarta <- GSEA(
+    geneList = genelist,
+    TERM2GENE = biocarta_gene_sets,
+    exponent = 1,
+    minGSSize = 10,
+    maxGSSize = 1000,
+    pvalueCutoff = 1,
+    pAdjustMethod = "BH",
+    eps = 1e-100
+  )
+  data <- biocarta@result
+  write.xlsx(data, 
+             file = paste0("GSEA/celltype_minor/BIOCARTA/BIOCARTA-", X, ".xlsx"),
+             row.names = FALSE)
+  cat("已完成", X, "的BIOCARTA分析\n")  
+  top10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES > 0) %>% head(n = 10)
+  bottom10 <- data %>% as_tibble() %>% arrange(desc(NES)) %>% filter(pvalue < 0.05 & NES < 0) %>% tail(n = 10)
+  combined <- bind_rows(top10, bottom10)
+  p <- ggplot(combined, aes(reorder(Description, NES), NES)) +
+    geom_col(aes(fill = pvalue)) + 
+    coord_flip() +
+    scale_fill_gradientn(
+      colours = c("#F2A49C", "#B9A3C6", "#8DAACB"),  # 蓝-紫-红
+      name = "pvalue",
+      limits = c(0.01, 0.05),
+      breaks = c(0.01, 0.02, 0.03, 0.04, 0.05),
+      labels = c("0.01", "0.02", "0.03", "0.04", "0.05")
+    )+
+    labs(
+      x = "",
+      y = "Normalized Enrichment Score (NES)",
+      title = "BIOCARTA GSEA"
+    ) +
+    scale_x_discrete(labels = function(dat) str_wrap(dat, width = 600)) + 
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+      axis.title.y = element_text(face = "bold"),
+      axis.text.y = element_text(size = 10, color = "black"),
+      axis.text.x = element_text(size = 9, color = "black"),
+      panel.grid.major.y = element_blank(),
+      legend.position = "bottom",
+      legend.title = element_text(face = "bold")
+    )
+  ggsave(plot=p, paste0("GSEA/celltype_minor/BIOCARTA/Bar_BIOCARTA_",X,".pdf"),width = 9,height = 8)
+  
 }
 
 # single signature GSEA ---------------------------------------------------
@@ -597,6 +750,10 @@ gseaNb(object = gsea,
        subPlot = 3)
 
 dev.off()
+
+
+
+
 
 
 
